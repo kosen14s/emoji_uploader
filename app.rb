@@ -8,8 +8,24 @@ require 'slack-ruby-client'
 
 Dotenv.load!
 
-class Emoji
-  def initialize
+class SlackTeam
+  def initialize(team, email, password)
+    @base_url = "https://#{team}.slack.com"
+    @agent = Mechanize.new
+    page = @agent.get(@base_url)
+    login(email, password, page)
+  end
+
+  def login(email, password, page)
+    res = page.form_with(action: '/') do |form|
+      form.field_with(name: 'email').value = email
+      form.field_with(name: 'password').value = password
+    end.submit
+
+    if res.code != '200'
+      puts "[#{res.code}] Login failed."
+      return -1
+    end
   end
 
   def download_file(name, url)
@@ -20,11 +36,12 @@ class Emoji
         f.puts(res.body)
       end
     else
-      raise 'Download failed'
+      puts "[#{res.code}] Download failed"
     end
   end
 
   def resize_file(name)
+    # TODO: Use Tempfile
     original = Magick::ImageList.new
     url = open(name)
     original.from_blob(url.read)
@@ -33,72 +50,58 @@ class Emoji
     image.write(name)
   end
 
-  def login(team, email, password)
-  end
-
-  def upload(team, email, password, file_name)
-    base_url = "https://#{team}.slack.com"
-    emoji_name = File.basename(file_name, '.*')
-    agent = Mechanize.new
-
-    agent.get(base_url) do |page|
-      res = page.form_with(action: '/') do |form|
-        form.field_with(name: 'email').value = email
-        form.field_with(name: 'password').value = password
-      end.submit
-
-      if res.code != '200'
-        puts "[#{res.code}] Login failed."
-        return -1
-      end
-
-      agent.get("#{base_url}/customize/emoji") do |page|
-        if page.body.include?(":#{emoji_name}:")
-          puts ":#{emoji_name}: is already exists."
-        else
-          puts "Uploading :#{emoji_name}:..."
-          res = page.form_with(action: '/customize/emoji') do |form|
-            form.field_with(name: 'name').value = emoji_name
-            form.radiobuttons_with(name: 'mode')[0].check
-            form.file_upload_with(name: 'img').file_name = file_name
-          end.submit
-          puts "Updated :#{emoji_name}:!"
-        end
+  def upload_emoji(file_name, emoji_name)
+    @agent.get("#{@base_url}/customize/emoji") do |page|
+      if page.body.include?(":#{emoji_name}:")
+        puts ":#{emoji_name}: is already exists."
+      else
+        puts "Uploading :#{emoji_name}:..."
+        res = page.form_with(action: '/customize/emoji') do |form|
+          form.field_with(name: 'name').value = emoji_name
+          form.radiobuttons_with(name: 'mode')[0].check
+          form.file_upload_with(name: 'img').file_name = file_name
+        end.submit
+        puts "Updated :#{emoji_name}:!"
       end
     end
   end
 end
 
+slack = SlackTeam.new(ENV['SLACK_TEAM'], ENV['SLACK_EMAIL'], ENV['SLACK_PASS'])
+
 Slack.configure do |config|
   config.token = ENV['SLACK_TOKEN']
+  fail "Missing ENV['SLACK_TOKEN']" unless config.token
 end
 
 client = Slack::RealTime::Client.new
 
 client.on :hello do
-  puts "Successfully connected, welcome '#{client.self.name}' to the '#{client.team.name}' team at https://#{client.team.domain}.slack.com."
+  puts "Successfully connected. Logged in as #{client.self.name} to #{client.team.name}."
 end
 
 client.on :close do |_data|
-  puts "Client is about to disconnect"
+  puts "Disconnecting..."
 end
 
 client.on :closed do |_data|
-  puts "Client has disconnected successfully!"
+  puts "Client has disconnected successfully."
 end
 
 client.on :message do |data|
   if data.file
     file = data.file
+    file_name = file.title
+    emoji_name = "test_#{File.basename(file_name, '.*')}"
+
     begin
-      emoji = Emoji.new
-      emoji.download_file(file.title, file.url_private)
-      emoji.resize_file(file.title)
-      emoji.upload(ENV['SLACK_TEAM'], ENV['SLACK_EMAIL'], ENV['SLACK_PASS'], file.title)
-      client.message(channel: data.channel, text: "Added an emoji! :#{File.basename(file.title, '.*')}:")
-    rescue => e
+      slack.download_file(file_name, file.url_private)
+      slack.resize_file(file_name)
+      slack.upload_emoji(file_name, emoji_name)
+      client.message(channel: data.channel, text: "New emoji has been created! :#{emoji_name}:")
+    rescue :e
       puts e
-      client.message(channel: data.channel, text: "Couldn't add an emoji.")
+      client.message(channel: data.channel, text: "Couldn't add the emoji.")
     end
   end
 end
