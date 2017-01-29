@@ -74,37 +74,63 @@ Slack.configure do |config|
   fail "Missing ENV['SLACK_TOKEN']" unless config.token
 end
 
-client = Slack::RealTime::Client.new
+client_real = Slack::RealTime::Client.new
+client_web = Slack::Web::Client.new
+# client_web.auth_test
 
-client.on :hello do
-  puts "Successfully connected. Logged in as #{client.self.name} to #{client.team.name}."
+client_real.on :hello do
+  puts "Successfully connected. Logged in as #{client_real.self.name} to #{client_real.team.name}."
 end
 
-client.on :close do |_data|
+client_real.on :close do |_data|
   puts "Disconnecting..."
 end
 
-client.on :closed do |_data|
+client_real.on :closed do |_data|
   puts "Client has disconnected successfully."
 end
 
-client.on :message do |data|
-  if data.file
+client_real.on :message do |data|
+  if data.file && data.channel == 'C3VM58ZEF'
     file = data.file
     file_name = file.title
     emoji_name = "test_#{File.basename(file_name, '.*')}"
+    attachments = [
+      {
+        fallback: "You are unable to choose emojify or not",
+        callback_id: "emojify",
+        color: "#3AA3E3",
+        attachment_type: "default",
+        actions: [
+          {
+            name: "yes",
+            text: "YES, emojify!",
+            type: "button",
+            value: "yes"
+          },
+          {
+            name: "no",
+            text: "NO",
+            type: "button",
+            value: "no"
+          }
+        ]
+      }
+    ]
+
+    client_web.chat_postMessage(channel: data.channel, text: "Do you wanna emojify :#{emoji_name}: ?", attachments: attachments)
 
     begin
       slack.download_file(file_name, file.url_private)
       slack.resize_file(file_name)
       slack.upload_emoji(file_name, emoji_name)
       File.delete(file_name)
-      client.message(channel: data.channel, text: "New emoji has been created! :#{emoji_name}:")
+      client_real.message(channel: data.channel, text: "New emoji has been created! :#{emoji_name}:")
     rescue :e
       puts e
-      client.message(channel: data.channel, text: "Couldn't add the emoji.")
+      client_real.message(channel: data.channel, text: "Couldn't add the emoji.")
     end
   end
 end
 
-client.start!
+client_real.start!
