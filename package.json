@@ -1,0 +1,19 @@
+{
+  "name": "kosen14s-emoji-uploader",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": "6.7.0"
+  },
+  "author": "",
+  "license": "ISC",
+
+  "dependencies": {
+    "botkit": "^0.2.2",
+    "querystring": "^0.2.0"
+  }
+}
