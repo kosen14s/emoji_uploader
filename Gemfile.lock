@@ -11,10 +11,14 @@ GEM
     domain_name (0.5.20161129)
       unf (>= 0.0.5, < 1.0.0)
     dotenv (2.1.1)
+    eventmachine (1.2.1)
     faraday (0.11.0)
       multipart-post (>= 1.2, < 3)
     faraday_middleware (0.11.0.1)
       faraday (>= 0.7.4, < 1.0)
+    faye-websocket (0.10.6)
+      eventmachine (>= 0.12.0)
+      websocket-driver (>= 0.5.1)
     gli (2.15.0)
     hashie (3.4.6)
     http-cookie (1.0.3)
@@ -77,6 +81,7 @@ PLATFORMS
 
 DEPENDENCIES
   dotenv
+  faye-websocket
   mechanize
   pry
   rest-client
