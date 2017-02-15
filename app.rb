@@ -89,7 +89,8 @@ client.on :closed do |_data|
 end
 
 client.on :message do |data|
-  if data.file
+  # emoji-test or emoji
+  if data.channel.match(/C3VM58ZEF|C16N9Q0DC/) && data.file
     file = data.file
     file_name = file.title
     emoji_name = "#{File.basename(file_name, '.*')}"
