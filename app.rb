@@ -6,7 +6,7 @@ require 'open-uri'
 require 'rest-client'
 require 'slack-ruby-client'
 
-Dotenv.load!
+Dotenv.load
 
 class SlackTeam
   def initialize(team, email, password)
