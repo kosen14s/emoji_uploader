@@ -92,7 +92,7 @@ client.on :message do |data|
   if data.file
     file = data.file
     file_name = file.title
-    emoji_name = "test_#{File.basename(file_name, '.*')}"
+    emoji_name = "#{File.basename(file_name, '.*')}"
 
     begin
       slack.download_file(file_name, file.url_private)
