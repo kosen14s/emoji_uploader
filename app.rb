@@ -1,6 +1,6 @@
 require 'pry'
 require 'dotenv'
-require 'RMagick'
+require 'rmagick'
 require 'mechanize'
 require 'open-uri'
 require 'rest-client'
