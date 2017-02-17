@@ -100,7 +100,7 @@ client.on :message do |data|
       slack.resize_file(file_name)
       slack.upload_emoji(file_name, emoji_name)
       File.delete(file_name)
-      client.message(channel: data.channel, text: "New emoji has been created! :#{emoji_name}:")
+      client.message(channel: data.channel, text: "New emoji has been created! #{emoji_name}")
     rescue :e
       puts e
       client.message(channel: data.channel, text: "Couldn't add the emoji.")
